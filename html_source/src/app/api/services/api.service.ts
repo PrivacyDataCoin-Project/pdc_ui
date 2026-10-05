@@ -12,7 +12,7 @@ export class ApiService {
     private _httpClient = inject(HttpClient);
 
     getWrapInfo(): Observable<WrapInfo> {
-        return this._httpClient.get<WrapInfo>('https://wrapped.pdc.org/api2/get_wrap_info');
+        return this._httpClient.get<WrapInfo>('https://wrapped.privacydatacoin.com/api2/get_wrap_info');
     }
 
     getVerifiedAssetInfoWhitelist(type: 'mainnet' | 'testnet'): Observable<{
@@ -21,9 +21,9 @@ export class ApiService {
     }> {
         let url: string;
         if (type === 'mainnet') {
-            url = 'https://api.pdc.org/assets_whitelist.json';
+            url = 'https://api.privacydatacoin.com/assets_whitelist.json';
         } else {
-            url = 'https://api.pdc.org/assets_whitelist_testnet.json';
+            url = 'https://api.privacydatacoin.com/assets_whitelist_testnet.json';
         }
 
         return this._httpClient.get<{ assets: VerifiedAssetInfoWhitelist; signature: string }>(url, {

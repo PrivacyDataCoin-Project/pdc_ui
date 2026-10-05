@@ -314,15 +314,15 @@ class ApiService {
         this._httpClient = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(_angular_common_http__WEBPACK_IMPORTED_MODULE_1__.HttpClient);
     }
     getWrapInfo() {
-        return this._httpClient.get('https://wrapped.pdc.org/api2/get_wrap_info');
+        return this._httpClient.get('https://wrapped.privacydatacoin.com/api2/get_wrap_info');
     }
     getVerifiedAssetInfoWhitelist(type) {
         let url;
         if (type === 'mainnet') {
-            url = 'https://api.pdc.org/assets_whitelist.json';
+            url = 'https://api.privacydatacoin.com/assets_whitelist.json';
         }
         else {
-            url = 'https://api.pdc.org/assets_whitelist_testnet.json';
+            url = 'https://api.privacydatacoin.com/assets_whitelist_testnet.json';
         }
         return this._httpClient.get(url, {
             headers: { 'Cache-Control': 'no-cache' },
