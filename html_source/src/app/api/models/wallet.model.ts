@@ -1,5 +1,6 @@
 import { Contracts } from './contract.model';
 import { Transaction, Transactions } from './transaction.model';
+import { normalizeSubtransfersByPid } from '@parts/functions/normalize-subtransfers';
 import { BigNumber } from 'bignumber.js';
 import {
     AssetBalance,
@@ -343,7 +344,7 @@ export class Wallet {
 
     prepareHistory(items: Transaction[]): void {
         for (let i = 0; i < items.length; i++) {
-            const tx = items[i];
+            const tx = normalizeSubtransfersByPid(items[i]);
             const hasIncoming = tx.subtransfers_by_pid?.some((g) => g.subtransfers.some((s) => s.is_income));
 
             if ((tx.tx_type === 7 || tx.tx_type === 11) && hasIncoming) {

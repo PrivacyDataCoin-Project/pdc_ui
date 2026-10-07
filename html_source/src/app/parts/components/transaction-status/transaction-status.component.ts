@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Subtransfer, Transaction } from '@api/models/transaction.model';
 import { PDC_ASSET_INFO } from '@parts/data/pdc-assets-info';
 import { isFinalizator, isInitiator, isSwapTransaction } from '@parts/functions/identify-transaction';
+import { normalizeSubtransfersByPid } from '@parts/functions/normalize-subtransfers';
 import { VariablesService } from '@parts/services/variables.service';
 import { TooltipDirective } from '@parts/directives';
 import { TranslateModule } from '@ngx-translate/core';
@@ -24,6 +25,7 @@ export class TransactionStatusComponent implements OnInit {
     constructor(public variablesService: VariablesService) {}
 
     ngOnInit(): void {
+        normalizeSubtransfersByPid(this.transaction);
         if (this.transaction.subtransfers_by_pid) {
             for (const group of this.transaction.subtransfers_by_pid) {
                 this.allSubtransfers.push(...group.subtransfers);

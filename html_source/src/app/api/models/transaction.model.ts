@@ -33,6 +33,8 @@ export interface Transaction {
     is_mixing: boolean;
     is_service: boolean;
     remote_addresses: string[];
+    /** Legacy PDC daemon field; prefer subtransfers_by_pid when present. */
+    subtransfers?: Subtransfers;
     subtransfers_by_pid?: SubtransfersByPID;
     show_sender: boolean;
     timestamp: number;

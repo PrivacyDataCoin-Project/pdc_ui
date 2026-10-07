@@ -1,5 +1,6 @@
 import { Transaction } from '@api/models/transaction.model';
 import { PDC_ASSET_INFO } from '@parts/data/pdc-assets-info';
+import { normalizeSubtransfersByPid } from '@parts/functions/normalize-subtransfers';
 
 export const isInitiator = (transaction: Transaction): boolean => {
     const spent = transaction.employed_entries?.spent;
@@ -12,6 +13,7 @@ export const isFinalizator = (transaction: Transaction): boolean => {
 };
 
 export const isSelfTransaction = (transaction: Transaction, address: string): boolean => {
+    normalizeSubtransfersByPid(transaction);
     const {
         remote_addresses,
         employed_entries: { receive, spent },
@@ -60,6 +62,7 @@ export const isSelfTransaction = (transaction: Transaction, address: string): bo
 };
 
 export const isSwapTransaction = (transaction: Transaction): boolean => {
+    normalizeSubtransfersByPid(transaction);
     const { subtransfers_by_pid } = transaction;
 
     if (!subtransfers_by_pid) {
@@ -87,6 +90,7 @@ export const isSwapTransaction = (transaction: Transaction): boolean => {
 };
 
 export const hasOutgoingSubtransfer = (transaction: Transaction): boolean => {
+    normalizeSubtransfersByPid(transaction);
     const { subtransfers_by_pid } = transaction;
     // Check if subtransfers exist and if any subtransfer in any group is an outgoing one.
     return !!subtransfers_by_pid && subtransfers_by_pid.some(({ subtransfers }) => subtransfers.some(({ is_income }) => !is_income));

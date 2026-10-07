@@ -5,8 +5,10 @@ import { AssetInfo } from '@api/models/assets.model';
 import { PDC_ASSET_INFO } from '@parts/data/pdc-assets-info';
 import { isFinalizator, isInitiator, isSelfTransaction, isSwapTransaction } from '@parts/functions/identify-transaction';
 import { AmountItems } from '@parts/interfaces/amount-items.interface';
+import { normalizeSubtransfersByPid } from '@parts/functions/normalize-subtransfers';
 
 export const getAmountItems = (transaction: Transaction, wallet: Wallet): AmountItems => {
+    normalizeSubtransfersByPid(transaction);
     const { subtransfers_by_pid, fee } = transaction;
 
     const allSubtransfers: Subtransfer[] = [];
