@@ -101,8 +101,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
                 this._backendService.webkitLaunchedScript();
 
-                this._backendService.start_backend(false, '127.0.0.1', 11512);
-
+                // Subscribe to daemon/wallet signals before start_backend so the
+                // first update_daemon_state is not lost (C++ also defers start).
                 this._backendService.eventSubscribe(Commands.quit_requested, () => {
                     if (this.onQuitRequest) {
                         return;
@@ -269,6 +269,8 @@ export class AppComponent implements OnInit, OnDestroy {
                         }
                     });
                 });
+
+                this._backendService.start_backend(false, '127.0.0.1', 11512);
 
                 this._backendService.eventSubscribe(Commands.money_transfer, (data) => {
                     console.log('----------------- money_transfer -----------------');

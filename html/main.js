@@ -1711,9 +1711,9 @@ class AppComponent {
         console.log(initMessage);
         console.groupEnd();
 
-        this._backendService.webkitLaunchedScript();
+        this._backendService.webkitLaunchedScript(); // Subscribe to daemon/wallet signals before start_backend so the
+        // first update_daemon_state is not lost (C++ also defers start).
 
-        this._backendService.start_backend(false, '127.0.0.1', 11512);
 
         this._backendService.eventSubscribe(_api_services_backend_service__WEBPACK_IMPORTED_MODULE_0__.Commands.quit_requested, () => {
           if (this.onQuitRequest) {
@@ -1902,6 +1902,8 @@ class AppComponent {
             }
           });
         });
+
+        this._backendService.start_backend(false, '127.0.0.1', 11512);
 
         this._backendService.eventSubscribe(_api_services_backend_service__WEBPACK_IMPORTED_MODULE_0__.Commands.money_transfer, data => {
           console.log('----------------- money_transfer -----------------');
@@ -30734,7 +30736,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const buildTime = '2026-10-07T09:58:19.529Z';
+const buildTime = '2026-10-09T12:57:13.808Z';
 if (_environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.production) {
     (0,_angular_core__WEBPACK_IMPORTED_MODULE_4__.enableProdMode)();
 }
