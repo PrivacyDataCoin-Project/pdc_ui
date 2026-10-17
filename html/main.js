@@ -824,13 +824,37 @@ class BackendService {
       }
     });
   }
-  /** Select which opened wallet Companion / JWT wallet RPC uses. */
+  /**
+   * Select which opened wallet Companion / JWT wallet RPC uses.
+   * Prefer native select_wallet_rpc when the Qt binary exposes it; otherwise use
+   * mw_select_wallet via call_rpc (available whenever Companion JWT RPC is on).
+   */
 
 
   selectWalletRpc(wallet_id, callback) {
-    this.runCommand(Commands.select_wallet_rpc, {
-      wallet_id: +wallet_id
-    }, callback);
+    var _a;
+
+    const id = +wallet_id;
+
+    if ((_a = this.backendObject) === null || _a === void 0 ? void 0 : _a[Commands.select_wallet_rpc]) {
+      this.runCommand(Commands.select_wallet_rpc, {
+        wallet_id: id
+      }, callback);
+      return;
+    }
+
+    this.call_rpc({
+      id: 0,
+      jsonrpc: '2.0',
+      method: 'mw_select_wallet',
+      params: {
+        wallet_id: id
+      }
+    }, () => {
+      if (callback) {
+        callback();
+      }
+    });
   }
 
   validateAddress(address, callback) {
@@ -30810,7 +30834,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const buildTime = '2026-10-17T23:36:36.398Z';
+const buildTime = '2026-10-17T23:44:12.032Z';
 if (_environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.production) {
     (0,_angular_core__WEBPACK_IMPORTED_MODULE_4__.enableProdMode)();
 }

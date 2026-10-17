@@ -480,9 +480,30 @@ export class BackendService {
         });
     }
 
-    /** Select which opened wallet Companion / JWT wallet RPC uses. */
+    /**
+     * Select which opened wallet Companion / JWT wallet RPC uses.
+     * Prefer native select_wallet_rpc when the Qt binary exposes it; otherwise use
+     * mw_select_wallet via call_rpc (available whenever Companion JWT RPC is on).
+     */
     selectWalletRpc(wallet_id: number, callback?: () => void): void {
-        this.runCommand(Commands.select_wallet_rpc, { wallet_id: +wallet_id }, callback);
+        const id = +wallet_id;
+        if (this.backendObject?.[Commands.select_wallet_rpc]) {
+            this.runCommand(Commands.select_wallet_rpc, { wallet_id: id }, callback);
+            return;
+        }
+        this.call_rpc(
+            {
+                id: 0,
+                jsonrpc: '2.0',
+                method: 'mw_select_wallet',
+                params: { wallet_id: id },
+            },
+            () => {
+                if (callback) {
+                    callback();
+                }
+            }
+        );
     }
 
     validateAddress(address, callback): void {
