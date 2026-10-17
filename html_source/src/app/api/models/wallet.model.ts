@@ -12,7 +12,7 @@ import {
 } from './assets.model';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { AliasInfo, AliasInfoList } from '@api/models/alias.model';
-import { PDC_ASSET_INFO } from '@parts/data/pdc-assets-info';
+import { BTCX_ASSET_ID, BTCX_ASSET_LOGO, PDC_ASSET_INFO } from '@parts/data/pdc-assets-info';
 import { map } from 'rxjs/operators';
 import { DEFAULT_ASSET_LOGO_SRC } from '@parts/data/constants';
 import { CurrentPriceForAssets } from '@api/models/api-pdc.models';
@@ -101,7 +101,13 @@ const prepareBalances = (
 
     const ensureLogoAndPriceUrl = (asset_info: AssetInfo): AssetInfo => ({
         ...asset_info,
-        logo: asset_info.logo || (asset_info.asset_id === PDC_ASSET_INFO.asset_id ? PDC_ASSET_INFO.logo : DEFAULT_ASSET_LOGO_SRC),
+        logo:
+            asset_info.logo ||
+            (asset_info.asset_id === PDC_ASSET_INFO.asset_id
+                ? PDC_ASSET_INFO.logo
+                : asset_info.asset_id === BTCX_ASSET_ID
+                  ? BTCX_ASSET_LOGO
+                  : DEFAULT_ASSET_LOGO_SRC),
         price_url: asset_info.price_url || (asset_info.asset_id === PDC_ASSET_INFO.asset_id ? PDC_ASSET_INFO.price_url : ''),
     });
 
