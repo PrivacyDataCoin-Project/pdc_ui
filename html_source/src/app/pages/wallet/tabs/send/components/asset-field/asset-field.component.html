@@ -18,10 +18,10 @@
             <ng-container *ngIf="item.asset">
                 <div class="text-ellipsis">
                     <div [innerHTML]="item.asset.asset_info | getLogoByAssetInfo" class="token-logo"></div>
-                    {{ item.asset.asset_info.full_name ?? '***' }}
+                    {{ item.asset.asset_info.ticker ?? '***' }}
 
                     <ng-container *appVisibilityBalance>
-                        ({{ item.asset.total | intToMoney : item.asset.asset_info.decimal_point }} {{ item.asset.asset_info.ticker }})
+                        ({{ item.asset.total | intToMoney : item.asset.asset_info.decimal_point }})
                     </ng-container>
                 </div>
             </ng-container>
