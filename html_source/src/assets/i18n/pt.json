@@ -963,7 +963,8 @@
                     "LABEL1": "Pdc Companion",
                     "LABEL2": "Segredo",
                     "LABEL3": "Port",
-                    "LABEL4": "(Requer senha mestre)"
+                    "LABEL4": "(Requer senha mestre)",
+                    "LABEL5": "Usa a carteira selecionada na barra lateral"
                 }
             }
         },

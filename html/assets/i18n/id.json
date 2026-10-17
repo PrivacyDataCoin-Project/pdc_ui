@@ -963,7 +963,8 @@
                     "LABEL1": "Pdc Companion",
                     "LABEL2": "Rahasia",
                     "LABEL3": "Port",
-                    "LABEL4": "(Membutuhkan kata sandi utama)"
+                    "LABEL4": "(Membutuhkan kata sandi utama)",
+                    "LABEL5": "Menggunakan wallet yang dipilih di bilah sisi"
                 }
             }
         },

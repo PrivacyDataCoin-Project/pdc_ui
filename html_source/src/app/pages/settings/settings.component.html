@@ -200,6 +200,12 @@
                             </ng-container>
                         </label>
                         <app-switch aria-labelledby="pdc-companion-label" formControlName="zanoCompation"></app-switch>
+                        <p class="companion-wallet-hint" *ngIf="zanoCompanionForm.controls.zanoCompation.getRawValue()">
+                            {{ 'SETTINGS.FORM.PDC_COMPANION.LABELS.LABEL5' | translate }}
+                            <ng-container *ngIf="variablesService.current_wallet as w">
+                                — {{ w.alias_info?.alias ? '@' + w.alias_info.alias : w.name }}
+                            </ng-container>
+                        </p>
                     </div>
                     <ng-container *ngIf="zanoCompanionForm.controls.zanoCompation.getRawValue()">
                         <div class="form__card">

@@ -963,7 +963,8 @@
                     "LABEL1": "Pdc Companion",
                     "LABEL2": "Segreto",
                     "LABEL3": "Porta",
-                    "LABEL4": "(Richiede password principale)"
+                    "LABEL4": "(Richiede password principale)",
+                    "LABEL5": "Usa il wallet selezionato nella barra laterale"
                 }
             }
         },

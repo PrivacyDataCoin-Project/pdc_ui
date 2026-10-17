@@ -963,7 +963,8 @@
                     "LABEL1": "Pdc Companion",
                     "LABEL2": "Geheimnis",
                     "LABEL3": "Port",
-                    "LABEL4": "(Benötigt Master-Passwort)"
+                    "LABEL4": "(Benötigt Master-Passwort)",
+                    "LABEL5": "Verwendet das in der Seitenleiste ausgewählte Wallet"
                 }
             }
         },

@@ -71,6 +71,13 @@
     padding-right: 7rem;
 }
 
+.companion-wallet-hint {
+    margin: 0.6rem 0 0;
+    font-size: 1.3rem;
+    line-height: 1.4;
+    color: var(--gray-400, #8b90a5);
+}
+
 .form__field {
     .btn--copy {
         position: absolute;

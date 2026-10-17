@@ -175,6 +175,7 @@ export enum Commands {
     call_rpc = 'call_rpc',
     call_wallet_rpc = 'call_wallet_rpc',
     setup_jwt_wallet_rpc = 'setup_jwt_wallet_rpc',
+    select_wallet_rpc = 'select_wallet_rpc',
     show_notification = 'show_notification',
     is_remnotenode_mode_preconfigured = 'is_remnotenode_mode_preconfigured',
 }
@@ -469,10 +470,19 @@ export class BackendService {
         this.runCommand(Commands.setup_jwt_wallet_rpc, secret, () => {
             this.variablesService.settings.zanoCompanionForm = value;
             this.storeAppData();
+            // Point Companion JWT RPC at the GUI-selected wallet when enabling.
+            if (value.zanoCompation && this.variablesService.current_wallet) {
+                this.selectWalletRpc(this.variablesService.current_wallet.wallet_id);
+            }
             if (callback) {
                 callback();
             }
         });
+    }
+
+    /** Select which opened wallet Companion / JWT wallet RPC uses. */
+    selectWalletRpc(wallet_id: number, callback?: () => void): void {
+        this.runCommand(Commands.select_wallet_rpc, { wallet_id: +wallet_id }, callback);
     }
 
     validateAddress(address, callback): void {

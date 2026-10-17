@@ -65,6 +65,17 @@ export class WalletsService {
                 wallet.currentPriceForAssets$.next(value);
             });
         });
+
+        // Companion JWT RPC targets one wallet at a time — keep it in sync with the sidebar selection.
+        this._variablesService.currentWalletChanged$.subscribe((wallet) => {
+            if (!wallet) {
+                return;
+            }
+            if (!this._variablesService.settings.zanoCompanionForm?.zanoCompation) {
+                return;
+            }
+            this._backendService.selectWalletRpc(wallet.wallet_id);
+        });
     }
 
     addWallet(wallet: Wallet): void {
