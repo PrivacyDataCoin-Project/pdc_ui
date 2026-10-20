@@ -5,6 +5,14 @@ import { WrapInfo } from '@api/models/wrap-info';
 import { PriceInfo, VerifiedAssetInfoWhitelist } from '@api/models/assets.model';
 import { catchError, map } from 'rxjs/operators';
 
+/** Trade USD book — ticker → USD (PDC from book/env, wraps from CoinGecko / peg). */
+export interface TradeUsdPricesResponse {
+    updatedAt: number;
+    prices: Record<string, number>;
+}
+
+const TRADE_API_BASE = 'https://api.trade.privacydatacoin.com';
+
 @Injectable({
     providedIn: 'root',
 })
@@ -29,6 +37,13 @@ export class ApiService {
         return this._httpClient.get<{ assets: VerifiedAssetInfoWhitelist; signature: string }>(url, {
             headers: { 'Cache-Control': 'no-cache' },
         });
+    }
+
+    /** Batch USD marks from Trade (preferred source for wallet portfolio value). */
+    getTradeUsdPrices(): Observable<TradeUsdPricesResponse> {
+        return this._httpClient.get<TradeUsdPricesResponse>(`${TRADE_API_BASE}/api/prices/usd`).pipe(
+            catchError(() => of({ updatedAt: 0, prices: {} }))
+        );
     }
 
     getCurrentPriceForAsset(asset_id: string): Observable<PriceInfo & { asset_id: string }> {

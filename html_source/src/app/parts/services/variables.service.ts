@@ -1,7 +1,7 @@
 import { inject, Injectable, NgZone, OnDestroy } from '@angular/core';
 import { Wallet } from '@api/models/wallet.model';
 import { Contact } from '@api/models/contact.model';
-import { BehaviorSubject, EMPTY, from, mergeMap, Observable, Subject, take, toArray } from 'rxjs';
+import { BehaviorSubject, EMPTY, from, mergeMap, Observable, of, Subject, take, toArray } from 'rxjs';
 import { Idle } from 'idlejs/dist';
 import { Router } from '@angular/router';
 import { ContextMenuComponent, ContextMenuService } from '@perfectmemory/ngx-contextmenu';
@@ -421,37 +421,77 @@ export class VariablesService implements OnDestroy {
             return;
         }
 
-        const concurrency = 6;
+        const idToTicker = this._assetIdToTickerMap();
+        const missingAfterTrade: string[] = [];
 
-        from(ids)
+        this._apiPdcService
+            .getTradeUsdPrices()
             .pipe(
-                mergeMap(
-                    (asset_id: string) =>
-                        this._apiPdcService.getCurrentPriceForAsset(asset_id).pipe(
-                            map((resp) => ({ ...resp, asset_id })),
-                            catchError(() => EMPTY)
-                        ),
-                    concurrency
-                ),
-                toArray(),
-                map((results) => {
+                map((book) => {
                     const acc: CurrentPriceForAssets = {};
-                    for (const item of results) {
-                        if (!item) continue;
-                        const { asset_id, data, success } = item as { asset_id: string; data: any; success: boolean };
-
-                        if (!success) continue;
-                        if (!data || typeof data !== 'object') continue;
-
-                        const hasUsd = data?.usd !== undefined;
-                        const hasUsd24h = data?.usd_24h_change !== undefined;
-                        if (!hasUsd && !hasUsd24h) continue;
-
-                        if (asset_id) {
-                            acc[asset_id] = { data, success };
+                    for (const asset_id of ids) {
+                        const ticker = idToTicker.get(asset_id.toLowerCase());
+                        const usd = ticker ? book.prices?.[ticker] : undefined;
+                        if (typeof usd === 'number' && usd > 0) {
+                            acc[asset_id] = {
+                                success: true,
+                                data: {
+                                    name: ticker,
+                                    usd,
+                                    usd_24h_change: 0,
+                                    fiat_prices: { usd },
+                                },
+                            };
+                        } else {
+                            missingAfterTrade.push(asset_id);
                         }
                     }
                     return acc;
+                }),
+                mergeMap((fromTrade) => {
+                    if (missingAfterTrade.length === 0) {
+                        return of(fromTrade);
+                    }
+                    const concurrency = 6;
+                    return from(missingAfterTrade).pipe(
+                        mergeMap(
+                            (asset_id: string) =>
+                                this._apiPdcService.getCurrentPriceForAsset(asset_id).pipe(
+                                    map((resp) => ({ ...resp, asset_id })),
+                                    catchError(() => EMPTY)
+                                ),
+                            concurrency
+                        ),
+                        toArray(),
+                        map((results) => {
+                            const acc: CurrentPriceForAssets = { ...fromTrade };
+                            for (const item of results) {
+                                if (!item) continue;
+                                const { asset_id, data, success } = item as {
+                                    asset_id: string;
+                                    data: any;
+                                    success: boolean;
+                                };
+                                if (!success || !data || typeof data !== 'object') continue;
+                                const usd = data.usd ?? data.fiat_prices?.usd;
+                                if (usd === undefined) continue;
+                                // Normalize explorer payloads so sidebar fiat math always sees fiat_prices.usd
+                                acc[asset_id] = {
+                                    success: true,
+                                    data: {
+                                        name: data.name ?? idToTicker.get(asset_id.toLowerCase()) ?? '',
+                                        usd: Number(usd),
+                                        usd_24h_change: Number(data.usd_24h_change ?? 0),
+                                        fiat_prices: {
+                                            ...(typeof data.fiat_prices === 'object' ? data.fiat_prices : {}),
+                                            usd: Number(usd),
+                                        },
+                                    },
+                                };
+                            }
+                            return acc;
+                        })
+                    );
                 }),
                 take(1),
                 takeUntil(this._destroy$)
@@ -466,5 +506,24 @@ export class VariablesService implements OnDestroy {
                     this.currentPriceForAssets$.next(merged);
                 },
             });
+    }
+
+    /** Map wallet asset ids → uppercase tickers (plus known Trade wraps). */
+    private _assetIdToTickerMap(): Map<string, string> {
+        const map = new Map<string, string>();
+        for (const wallet of this.wallets ?? []) {
+            for (const balance of wallet.balances ?? []) {
+                const id = balance.asset_info?.asset_id?.toLowerCase();
+                const ticker = balance.asset_info?.ticker?.toUpperCase();
+                if (id && ticker) {
+                    map.set(id, ticker);
+                }
+            }
+        }
+        // Known Trade marks (in case balances not yet hydrated)
+        map.set('d6329b5b1f7c0805b5c345f4957554002a2f557845f64d7645dae0e051a6498a', 'PDC');
+        map.set('c2bf0410873b49ec7e7dd19d62bca9625d80cd3123670a67b48d997d3127426d', 'BTCX');
+        map.set('d59ca1b363d5f44e0f087d9549b734815fbc2a6ab49ef0a877ccd910b1a1b9c3', 'ARQX');
+        return map;
     }
 }

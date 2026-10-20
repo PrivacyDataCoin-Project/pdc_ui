@@ -979,7 +979,8 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     private _initAssetPricePolling(): void {
-        interval(600000)
+        // Trade USD book TTL is 60s — refresh sidebar portfolio marks on the same cadence.
+        interval(60_000)
             .pipe(takeUntil(this._destroy$))
             .subscribe({
                 next: () => {

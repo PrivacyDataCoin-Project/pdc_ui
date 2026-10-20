@@ -308,14 +308,15 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ 3184);
 /* harmony import */ var _angular_common_http__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/common/http */ 28784);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs */ 10745);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/operators */ 50635);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/operators */ 53158);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ 10745);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/operators */ 53158);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs/operators */ 50635);
 
 
 
 
 
+const TRADE_API_BASE = 'https://api.trade.privacydatacoin.com';
 class ApiService {
     constructor() {
         this._httpClient = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(_angular_common_http__WEBPACK_IMPORTED_MODULE_1__.HttpClient);
@@ -335,10 +336,14 @@ class ApiService {
             headers: { 'Cache-Control': 'no-cache' },
         });
     }
+    /** Batch USD marks from Trade (preferred source for wallet portfolio value). */
+    getTradeUsdPrices() {
+        return this._httpClient.get(`${TRADE_API_BASE}/api/prices/usd`).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_2__.catchError)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_3__.of)({ updatedAt: 0, prices: {} })));
+    }
     getCurrentPriceForAsset(asset_id) {
         return this._httpClient
             .get(`https://explorer.privacydatacoin.com/api/price?asset_id=${asset_id}`)
-            .pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_2__.map)((response) => ({ ...response, asset_id })), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_3__.catchError)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_4__.of)({
+            .pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_4__.map)((response) => ({ ...response, asset_id })), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_2__.catchError)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_3__.of)({
             success: false,
             data: 'Asset not found',
             asset_id,
@@ -2613,7 +2618,8 @@ class AppComponent {
   }
 
   _initAssetPricePolling() {
-    (0,rxjs__WEBPACK_IMPORTED_MODULE_17__.interval)(600000).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_18__.takeUntil)(this._destroy$)).subscribe({
+    // Trade USD book TTL is 60s — refresh sidebar portfolio marks on the same cadence.
+    (0,rxjs__WEBPACK_IMPORTED_MODULE_17__.interval)(60000).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_18__.takeUntil)(this._destroy$)).subscribe({
       next: () => {
         this.variablesService.loadCurrentPriceForAllAssets();
       }
@@ -25014,31 +25020,32 @@ class WalletCardBalanceComponent {
       anyPriceFound
     } = this.calculateTotalFiat(balances, prices, currency);
 
-    if (hasPositiveBalance && !anyPriceFound) {
+    if (displayMode === 'pdc') {
+      const zanoPriceData = (_a = prices[_parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_7__.PDC_ASSET_INFO.asset_id]) === null || _a === void 0 ? void 0 : _a.data;
+      const zanoFiatPrice = zanoPriceData && typeof zanoPriceData !== 'string' ? (_b = zanoPriceData.fiat_prices) === null || _b === void 0 ? void 0 : _b[currency] : undefined; // Portfolio → PDC using Trade/explorer USD marks when available.
+
+      if (anyPriceFound && zanoFiatPrice && zanoFiatPrice > 0) {
+        const totalPdc = totalFiat.dividedBy(zanoFiatPrice);
+        const zanoDecimalPoints = _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_7__.PDC_ASSET_INFO.decimal_point;
+        const totalPdcInt = totalPdc.multipliedBy(Math.pow(10, zanoDecimalPoints));
+        return {
+          value: this.intToMoneyPipe.transform(totalPdcInt, zanoDecimalPoints),
+          currency: zanoTicker
+        };
+      } // No marks yet: fall back to native PDC balance (not "---").
+
+
+      const zanoBalance = balances.find(b => b.asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_7__.PDC_ASSET_INFO.asset_id);
       return {
-        value: '---',
-        currency: displayMode === 'pdc' ? zanoTicker : currency.toUpperCase()
+        value: this.intToMoneyPipe.transform((_c = zanoBalance === null || zanoBalance === void 0 ? void 0 : zanoBalance.total) !== null && _c !== void 0 ? _c : 0, zanoBalance === null || zanoBalance === void 0 ? void 0 : zanoBalance.asset_info.decimal_point),
+        currency: zanoTicker
       };
     }
 
-    if (displayMode === 'pdc') {
-      const zanoPriceData = (_a = prices[_parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_7__.PDC_ASSET_INFO.asset_id]) === null || _a === void 0 ? void 0 : _a.data;
-      const zanoFiatPrice = zanoPriceData && typeof zanoPriceData !== 'string' ? (_b = zanoPriceData.fiat_prices) === null || _b === void 0 ? void 0 : _b[currency] : undefined;
-
-      if (!zanoFiatPrice || zanoFiatPrice === 0) {
-        const zanoBalance = balances.find(b => b.asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_7__.PDC_ASSET_INFO.asset_id);
-        return {
-          value: this.intToMoneyPipe.transform((_c = zanoBalance === null || zanoBalance === void 0 ? void 0 : zanoBalance.total) !== null && _c !== void 0 ? _c : 0, zanoBalance === null || zanoBalance === void 0 ? void 0 : zanoBalance.asset_info.decimal_point),
-          currency: zanoTicker
-        };
-      }
-
-      const totalPdc = totalFiat.dividedBy(zanoFiatPrice);
-      const zanoDecimalPoints = _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_7__.PDC_ASSET_INFO.decimal_point;
-      const totalPdcInt = totalPdc.multipliedBy(Math.pow(10, zanoDecimalPoints));
+    if (hasPositiveBalance && !anyPriceFound) {
       return {
-        value: this.intToMoneyPipe.transform(totalPdcInt, zanoDecimalPoints),
-        currency: zanoTicker
+        value: '---',
+        currency: currency.toUpperCase()
       };
     }
 
@@ -29428,23 +29435,24 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(/*! @angular/core */ 3184);
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! rxjs */ 76317);
 /* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(/*! rxjs */ 80228);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! rxjs */ 59346);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! rxjs */ 51353);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! rxjs */ 20591);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! rxjs */ 54107);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! rxjs */ 59295);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_13__ = __webpack_require__(/*! rxjs */ 51353);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_14__ = __webpack_require__(/*! rxjs */ 10745);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! rxjs */ 59346);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_17__ = __webpack_require__(/*! rxjs */ 20591);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_18__ = __webpack_require__(/*! rxjs */ 54107);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! rxjs */ 59295);
 /* harmony import */ var idlejs_dist__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! idlejs/dist */ 252);
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! rxjs/operators */ 50635);
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(/*! rxjs/operators */ 98977);
 /* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_12__ = __webpack_require__(/*! rxjs/operators */ 68951);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_15__ = __webpack_require__(/*! rxjs/operators */ 53158);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_16__ = __webpack_require__(/*! rxjs/operators */ 53158);
 /* harmony import */ var _angular_cdk_dialog__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(/*! @angular/cdk/dialog */ 28800);
 /* harmony import */ var _angular_material_dialog__WEBPACK_IMPORTED_MODULE_11__ = __webpack_require__(/*! @angular/material/dialog */ 95758);
 /* harmony import */ var _parts_data_constants__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @parts/data/constants */ 23480);
 /* harmony import */ var _parts_functions_create_default_app_settings__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @parts/functions/create-default-app-settings */ 7646);
-/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_19__ = __webpack_require__(/*! @angular/router */ 52816);
+/* harmony import */ var _angular_router__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! @angular/router */ 52816);
 /* harmony import */ var _api_services_api_service__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @api/services/api.service */ 59891);
-/* harmony import */ var _perfectmemory_ngx_contextmenu__WEBPACK_IMPORTED_MODULE_20__ = __webpack_require__(/*! @perfectmemory/ngx-contextmenu */ 19386);
+/* harmony import */ var _perfectmemory_ngx_contextmenu__WEBPACK_IMPORTED_MODULE_21__ = __webpack_require__(/*! @perfectmemory/ngx-contextmenu */ 19386);
 
 
 
@@ -29798,35 +29806,78 @@ class VariablesService {
       return;
     }
 
-    const concurrency = 6;
-    (0,rxjs__WEBPACK_IMPORTED_MODULE_13__.from)(ids).pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_14__.mergeMap)(asset_id => this._apiPdcService.getCurrentPriceForAsset(asset_id).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_6__.map)(resp => ({ ...resp,
-      asset_id
-    })), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_15__.catchError)(() => rxjs__WEBPACK_IMPORTED_MODULE_16__.EMPTY)), concurrency), (0,rxjs__WEBPACK_IMPORTED_MODULE_17__.toArray)(), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_6__.map)(results => {
+    const idToTicker = this._assetIdToTickerMap();
+
+    const missingAfterTrade = [];
+
+    this._apiPdcService.getTradeUsdPrices().pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_6__.map)(book => {
+      var _a;
+
       const acc = {};
 
-      for (const item of results) {
-        if (!item) continue;
-        const {
-          asset_id,
-          data,
-          success
-        } = item;
-        if (!success) continue;
-        if (!data || typeof data !== 'object') continue;
-        const hasUsd = (data === null || data === void 0 ? void 0 : data.usd) !== undefined;
-        const hasUsd24h = (data === null || data === void 0 ? void 0 : data.usd_24h_change) !== undefined;
-        if (!hasUsd && !hasUsd24h) continue;
+      for (const asset_id of ids) {
+        const ticker = idToTicker.get(asset_id.toLowerCase());
+        const usd = ticker ? (_a = book.prices) === null || _a === void 0 ? void 0 : _a[ticker] : undefined;
 
-        if (asset_id) {
+        if (typeof usd === 'number' && usd > 0) {
           acc[asset_id] = {
-            data,
-            success
+            success: true,
+            data: {
+              name: ticker,
+              usd,
+              usd_24h_change: 0,
+              fiat_prices: {
+                usd
+              }
+            }
           };
+        } else {
+          missingAfterTrade.push(asset_id);
         }
       }
 
       return acc;
-    }), (0,rxjs__WEBPACK_IMPORTED_MODULE_18__.take)(1), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_12__.takeUntil)(this._destroy$)).subscribe({
+    }), (0,rxjs__WEBPACK_IMPORTED_MODULE_13__.mergeMap)(fromTrade => {
+      if (missingAfterTrade.length === 0) {
+        return (0,rxjs__WEBPACK_IMPORTED_MODULE_14__.of)(fromTrade);
+      }
+
+      const concurrency = 6;
+      return (0,rxjs__WEBPACK_IMPORTED_MODULE_15__.from)(missingAfterTrade).pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_13__.mergeMap)(asset_id => this._apiPdcService.getCurrentPriceForAsset(asset_id).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_6__.map)(resp => ({ ...resp,
+        asset_id
+      })), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_16__.catchError)(() => rxjs__WEBPACK_IMPORTED_MODULE_17__.EMPTY)), concurrency), (0,rxjs__WEBPACK_IMPORTED_MODULE_18__.toArray)(), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_6__.map)(results => {
+        var _a, _b, _c, _d, _e;
+
+        const acc = { ...fromTrade
+        };
+
+        for (const item of results) {
+          if (!item) continue;
+          const {
+            asset_id,
+            data,
+            success
+          } = item;
+          if (!success || !data || typeof data !== 'object') continue;
+          const usd = (_a = data.usd) !== null && _a !== void 0 ? _a : (_b = data.fiat_prices) === null || _b === void 0 ? void 0 : _b.usd;
+          if (usd === undefined) continue; // Normalize explorer payloads so sidebar fiat math always sees fiat_prices.usd
+
+          acc[asset_id] = {
+            success: true,
+            data: {
+              name: (_d = (_c = data.name) !== null && _c !== void 0 ? _c : idToTicker.get(asset_id.toLowerCase())) !== null && _d !== void 0 ? _d : '',
+              usd: Number(usd),
+              usd_24h_change: Number((_e = data.usd_24h_change) !== null && _e !== void 0 ? _e : 0),
+              fiat_prices: { ...(typeof data.fiat_prices === 'object' ? data.fiat_prices : {}),
+                usd: Number(usd)
+              }
+            }
+          };
+        }
+
+        return acc;
+      }));
+    }), (0,rxjs__WEBPACK_IMPORTED_MODULE_19__.take)(1), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_12__.takeUntil)(this._destroy$)).subscribe({
       next: data => {
         if (!data || Object.keys(data).length === 0) {
           return;
@@ -29840,11 +29891,36 @@ class VariablesService {
       }
     });
   }
+  /** Map wallet asset ids → uppercase tickers (plus known Trade wraps). */
+
+
+  _assetIdToTickerMap() {
+    var _a, _b, _c, _d, _e, _f;
+
+    const map = new Map();
+
+    for (const wallet of (_a = this.wallets) !== null && _a !== void 0 ? _a : []) {
+      for (const balance of (_b = wallet.balances) !== null && _b !== void 0 ? _b : []) {
+        const id = (_d = (_c = balance.asset_info) === null || _c === void 0 ? void 0 : _c.asset_id) === null || _d === void 0 ? void 0 : _d.toLowerCase();
+        const ticker = (_f = (_e = balance.asset_info) === null || _e === void 0 ? void 0 : _e.ticker) === null || _f === void 0 ? void 0 : _f.toUpperCase();
+
+        if (id && ticker) {
+          map.set(id, ticker);
+        }
+      }
+    } // Known Trade marks (in case balances not yet hydrated)
+
+
+    map.set('d6329b5b1f7c0805b5c345f4957554002a2f557845f64d7645dae0e051a6498a', 'PDC');
+    map.set('c2bf0410873b49ec7e7dd19d62bca9625d80cd3123670a67b48d997d3127426d', 'BTCX');
+    map.set('d59ca1b363d5f44e0f087d9549b734815fbc2a6ab49ef0a877ccd910b1a1b9c3', 'ARQX');
+    return map;
+  }
 
 }
 
 VariablesService.ɵfac = function VariablesService_Factory(t) {
-  return new (t || VariablesService)(_angular_core__WEBPACK_IMPORTED_MODULE_9__["ɵɵinject"](_angular_router__WEBPACK_IMPORTED_MODULE_19__.Router), _angular_core__WEBPACK_IMPORTED_MODULE_9__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_9__.NgZone), _angular_core__WEBPACK_IMPORTED_MODULE_9__["ɵɵinject"](_api_services_api_service__WEBPACK_IMPORTED_MODULE_4__.ApiService), _angular_core__WEBPACK_IMPORTED_MODULE_9__["ɵɵinject"](_perfectmemory_ngx_contextmenu__WEBPACK_IMPORTED_MODULE_20__.ContextMenuService));
+  return new (t || VariablesService)(_angular_core__WEBPACK_IMPORTED_MODULE_9__["ɵɵinject"](_angular_router__WEBPACK_IMPORTED_MODULE_20__.Router), _angular_core__WEBPACK_IMPORTED_MODULE_9__["ɵɵinject"](_angular_core__WEBPACK_IMPORTED_MODULE_9__.NgZone), _angular_core__WEBPACK_IMPORTED_MODULE_9__["ɵɵinject"](_api_services_api_service__WEBPACK_IMPORTED_MODULE_4__.ApiService), _angular_core__WEBPACK_IMPORTED_MODULE_9__["ɵɵinject"](_perfectmemory_ngx_contextmenu__WEBPACK_IMPORTED_MODULE_21__.ContextMenuService));
 };
 
 VariablesService.ɵprov = /*@__PURE__*/_angular_core__WEBPACK_IMPORTED_MODULE_9__["ɵɵdefineInjectable"]({
@@ -30863,7 +30939,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const buildTime = '2026-10-20T21:36:34.479Z';
+const buildTime = '2026-10-20T22:25:22.465Z';
 if (_environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.production) {
     (0,_angular_core__WEBPACK_IMPORTED_MODULE_4__.enableProdMode)();
 }

@@ -78,30 +78,32 @@ export class WalletCardBalanceComponent implements OnChanges {
 
         const { totalFiat, hasPositiveBalance, anyPriceFound } = this.calculateTotalFiat(balances, prices, currency);
 
-        if (hasPositiveBalance && !anyPriceFound) {
-            return { value: '---', currency: displayMode === 'pdc' ? zanoTicker : currency.toUpperCase() };
-        }
-
         if (displayMode === 'pdc') {
             const zanoPriceData = prices[PDC_ASSET_INFO.asset_id]?.data;
-            const zanoFiatPrice = zanoPriceData && typeof zanoPriceData !== 'string' ? zanoPriceData.fiat_prices?.[currency] : undefined;
+            const zanoFiatPrice =
+                zanoPriceData && typeof zanoPriceData !== 'string' ? zanoPriceData.fiat_prices?.[currency] : undefined;
 
-            if (!zanoFiatPrice || zanoFiatPrice === 0) {
-                const zanoBalance = balances.find((b) => b.asset_info.asset_id === PDC_ASSET_INFO.asset_id);
+            // Portfolio → PDC using Trade/explorer USD marks when available.
+            if (anyPriceFound && zanoFiatPrice && zanoFiatPrice > 0) {
+                const totalPdc = totalFiat.dividedBy(zanoFiatPrice);
+                const zanoDecimalPoints = PDC_ASSET_INFO.decimal_point;
+                const totalPdcInt = totalPdc.multipliedBy(Math.pow(10, zanoDecimalPoints));
                 return {
-                    value: this.intToMoneyPipe.transform(zanoBalance?.total ?? 0, zanoBalance?.asset_info.decimal_point),
+                    value: this.intToMoneyPipe.transform(totalPdcInt, zanoDecimalPoints),
                     currency: zanoTicker,
                 };
             }
 
-            const totalPdc = totalFiat.dividedBy(zanoFiatPrice);
-            const zanoDecimalPoints = PDC_ASSET_INFO.decimal_point;
-            const totalPdcInt = totalPdc.multipliedBy(Math.pow(10, zanoDecimalPoints));
-
+            // No marks yet: fall back to native PDC balance (not "---").
+            const zanoBalance = balances.find((b) => b.asset_info.asset_id === PDC_ASSET_INFO.asset_id);
             return {
-                value: this.intToMoneyPipe.transform(totalPdcInt, zanoDecimalPoints),
+                value: this.intToMoneyPipe.transform(zanoBalance?.total ?? 0, zanoBalance?.asset_info.decimal_point),
                 currency: zanoTicker,
             };
+        }
+
+        if (hasPositiveBalance && !anyPriceFound) {
+            return { value: '---', currency: currency.toUpperCase() };
         }
 
         return {
