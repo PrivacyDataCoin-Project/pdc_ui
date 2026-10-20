@@ -81,7 +81,11 @@ export class WalletCardBalanceComponent implements OnChanges {
         if (displayMode === 'pdc') {
             const zanoPriceData = prices[PDC_ASSET_INFO.asset_id]?.data;
             const zanoFiatPrice =
-                zanoPriceData && typeof zanoPriceData !== 'string' ? zanoPriceData.fiat_prices?.[currency] : undefined;
+                zanoPriceData && typeof zanoPriceData !== 'string'
+                    ? zanoPriceData.fiat_prices?.[currency] ??
+                      zanoPriceData.fiat_prices?.[currency.toLowerCase()] ??
+                      (currency.toLowerCase() === 'usd' ? zanoPriceData.usd : undefined)
+                    : undefined;
 
             // Portfolio → PDC using Trade/explorer USD marks when available.
             if (anyPriceFound && zanoFiatPrice && zanoFiatPrice > 0) {
@@ -129,7 +133,10 @@ export class WalletCardBalanceComponent implements OnChanges {
                 hasPositiveBalance = true;
                 const priceData = prices[balance.asset_info.asset_id]?.data;
                 if (priceData && typeof priceData !== 'string') {
-                    const fiatPrice = priceData.fiat_prices?.[currency];
+                    const fiatPrice =
+                        priceData.fiat_prices?.[currency] ??
+                        priceData.fiat_prices?.[currency.toLowerCase()] ??
+                        (currency.toLowerCase() === 'usd' ? priceData.usd : undefined);
                     if (fiatPrice) {
                         anyPriceFound = true;
                         totalFiat = totalFiat.plus(bnAmount.multipliedBy(fiatPrice));

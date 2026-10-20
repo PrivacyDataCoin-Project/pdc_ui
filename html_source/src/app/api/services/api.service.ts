@@ -11,7 +11,22 @@ export interface TradeUsdPricesResponse {
     prices: Record<string, number>;
 }
 
+/** Explorer proxy of Trade marks (CORS *) — used by the desktop wallet WebEngine. */
+export interface PdcMarketPriceResponse {
+    success: boolean;
+    data?: {
+        usd?: number;
+        pdcUsd?: number;
+        btcxUsd?: number;
+        arqxUsd?: number | null;
+        source?: string;
+        timestamp?: number | null;
+    };
+    error?: string;
+}
+
 const TRADE_API_BASE = 'https://api.trade.privacydatacoin.com';
+const EXPLORER_API_BASE = 'https://explorer.privacydatacoin.com';
 
 @Injectable({
     providedIn: 'root',
@@ -39,7 +54,31 @@ export class ApiService {
         });
     }
 
-    /** Batch USD marks from Trade (preferred source for wallet portfolio value). */
+    /**
+     * Trade USD marks via explorer (Access-Control-Allow-Origin: *).
+     * Direct Trade calls are blocked from the Qt WebEngine origin.
+     */
+    getPdcMarketUsdPrices(): Observable<TradeUsdPricesResponse> {
+        return this._httpClient.get<PdcMarketPriceResponse>(`${EXPLORER_API_BASE}/api/pdc_market`).pipe(
+            map((resp) => {
+                const prices: Record<string, number> = {};
+                const d = resp?.success ? resp.data : undefined;
+                const pdc = Number(d?.pdcUsd ?? d?.usd);
+                const btcx = Number(d?.btcxUsd);
+                const arqx = Number(d?.arqxUsd);
+                if (Number.isFinite(pdc) && pdc > 0) prices.PDC = pdc;
+                if (Number.isFinite(btcx) && btcx > 0) prices.BTCX = btcx;
+                if (Number.isFinite(arqx) && arqx > 0) prices.ARQX = arqx;
+                return {
+                    updatedAt: Number(d?.timestamp ?? 0) || Math.floor(Date.now() / 1000),
+                    prices,
+                };
+            }),
+            catchError(() => of({ updatedAt: 0, prices: {} }))
+        );
+    }
+
+    /** Direct Trade book — works in browsers allow-listed by Trade CORS. */
     getTradeUsdPrices(): Observable<TradeUsdPricesResponse> {
         return this._httpClient.get<TradeUsdPricesResponse>(`${TRADE_API_BASE}/api/prices/usd`).pipe(
             catchError(() => of({ updatedAt: 0, prices: {} }))
@@ -52,7 +91,7 @@ export class ApiService {
                 PriceInfo & {
                     asset_id: string;
                 }
-            >(`https://explorer.privacydatacoin.com/api/price?asset_id=${asset_id}`)
+            >(`${EXPLORER_API_BASE}/api/price?asset_id=${asset_id}`)
             .pipe(
                 map((response) => ({ ...response, asset_id })),
                 catchError(() =>

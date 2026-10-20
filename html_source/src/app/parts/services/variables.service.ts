@@ -424,9 +424,17 @@ export class VariablesService implements OnDestroy {
         const idToTicker = this._assetIdToTickerMap();
         const missingAfterTrade: string[] = [];
 
+        // Explorer /api/pdc_market proxies Trade marks with CORS * (Qt WebEngine can call it).
+        // Direct Trade /api/prices/usd is allow-list-only and fails from the desktop wallet.
         this._apiPdcService
-            .getTradeUsdPrices()
+            .getPdcMarketUsdPrices()
             .pipe(
+                mergeMap((market) => {
+                    if (market.prices && Object.keys(market.prices).length > 0) {
+                        return of(market);
+                    }
+                    return this._apiPdcService.getTradeUsdPrices();
+                }),
                 map((book) => {
                     const acc: CurrentPriceForAssets = {};
                     for (const asset_id of ids) {
@@ -474,7 +482,7 @@ export class VariablesService implements OnDestroy {
                                 };
                                 if (!success || !data || typeof data !== 'object') continue;
                                 const usd = data.usd ?? data.fiat_prices?.usd;
-                                if (usd === undefined) continue;
+                                if (usd === undefined || !(Number(usd) > 0)) continue;
                                 // Normalize explorer payloads so sidebar fiat math always sees fiat_prices.usd
                                 acc[asset_id] = {
                                     success: true,

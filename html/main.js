@@ -308,15 +308,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _angular_core__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @angular/core */ 3184);
 /* harmony import */ var _angular_common_http__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @angular/common/http */ 28784);
-/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs */ 10745);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/operators */ 53158);
-/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs/operators */ 50635);
+/* harmony import */ var rxjs__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! rxjs */ 10745);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! rxjs/operators */ 50635);
+/* harmony import */ var rxjs_operators__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! rxjs/operators */ 53158);
 
 
 
 
 
 const TRADE_API_BASE = 'https://api.trade.privacydatacoin.com';
+const EXPLORER_API_BASE = 'https://explorer.privacydatacoin.com';
 class ApiService {
     constructor() {
         this._httpClient = (0,_angular_core__WEBPACK_IMPORTED_MODULE_0__.inject)(_angular_common_http__WEBPACK_IMPORTED_MODULE_1__.HttpClient);
@@ -336,14 +337,38 @@ class ApiService {
             headers: { 'Cache-Control': 'no-cache' },
         });
     }
-    /** Batch USD marks from Trade (preferred source for wallet portfolio value). */
+    /**
+     * Trade USD marks via explorer (Access-Control-Allow-Origin: *).
+     * Direct Trade calls are blocked from the Qt WebEngine origin.
+     */
+    getPdcMarketUsdPrices() {
+        return this._httpClient.get(`${EXPLORER_API_BASE}/api/pdc_market`).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_2__.map)((resp) => {
+            var _a, _b;
+            const prices = {};
+            const d = (resp === null || resp === void 0 ? void 0 : resp.success) ? resp.data : undefined;
+            const pdc = Number((_a = d === null || d === void 0 ? void 0 : d.pdcUsd) !== null && _a !== void 0 ? _a : d === null || d === void 0 ? void 0 : d.usd);
+            const btcx = Number(d === null || d === void 0 ? void 0 : d.btcxUsd);
+            const arqx = Number(d === null || d === void 0 ? void 0 : d.arqxUsd);
+            if (Number.isFinite(pdc) && pdc > 0)
+                prices.PDC = pdc;
+            if (Number.isFinite(btcx) && btcx > 0)
+                prices.BTCX = btcx;
+            if (Number.isFinite(arqx) && arqx > 0)
+                prices.ARQX = arqx;
+            return {
+                updatedAt: Number((_b = d === null || d === void 0 ? void 0 : d.timestamp) !== null && _b !== void 0 ? _b : 0) || Math.floor(Date.now() / 1000),
+                prices,
+            };
+        }), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_3__.catchError)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_4__.of)({ updatedAt: 0, prices: {} })));
+    }
+    /** Direct Trade book — works in browsers allow-listed by Trade CORS. */
     getTradeUsdPrices() {
-        return this._httpClient.get(`${TRADE_API_BASE}/api/prices/usd`).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_2__.catchError)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_3__.of)({ updatedAt: 0, prices: {} })));
+        return this._httpClient.get(`${TRADE_API_BASE}/api/prices/usd`).pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_3__.catchError)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_4__.of)({ updatedAt: 0, prices: {} })));
     }
     getCurrentPriceForAsset(asset_id) {
         return this._httpClient
-            .get(`https://explorer.privacydatacoin.com/api/price?asset_id=${asset_id}`)
-            .pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_4__.map)((response) => ({ ...response, asset_id })), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_2__.catchError)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_3__.of)({
+            .get(`${EXPLORER_API_BASE}/api/price?asset_id=${asset_id}`)
+            .pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_2__.map)((response) => ({ ...response, asset_id })), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_3__.catchError)(() => (0,rxjs__WEBPACK_IMPORTED_MODULE_4__.of)({
             success: false,
             data: 'Asset not found',
             asset_id,
@@ -24999,7 +25024,7 @@ class WalletCardBalanceComponent {
   }
 
   calculateTotalBalance(balances, prices, settings) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e, _f;
 
     const {
       currency
@@ -25022,7 +25047,7 @@ class WalletCardBalanceComponent {
 
     if (displayMode === 'pdc') {
       const zanoPriceData = (_a = prices[_parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_7__.PDC_ASSET_INFO.asset_id]) === null || _a === void 0 ? void 0 : _a.data;
-      const zanoFiatPrice = zanoPriceData && typeof zanoPriceData !== 'string' ? (_b = zanoPriceData.fiat_prices) === null || _b === void 0 ? void 0 : _b[currency] : undefined; // Portfolio → PDC using Trade/explorer USD marks when available.
+      const zanoFiatPrice = zanoPriceData && typeof zanoPriceData !== 'string' ? (_e = (_c = (_b = zanoPriceData.fiat_prices) === null || _b === void 0 ? void 0 : _b[currency]) !== null && _c !== void 0 ? _c : (_d = zanoPriceData.fiat_prices) === null || _d === void 0 ? void 0 : _d[currency.toLowerCase()]) !== null && _e !== void 0 ? _e : currency.toLowerCase() === 'usd' ? zanoPriceData.usd : undefined : undefined; // Portfolio → PDC using Trade/explorer USD marks when available.
 
       if (anyPriceFound && zanoFiatPrice && zanoFiatPrice > 0) {
         const totalPdc = totalFiat.dividedBy(zanoFiatPrice);
@@ -25037,7 +25062,7 @@ class WalletCardBalanceComponent {
 
       const zanoBalance = balances.find(b => b.asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_7__.PDC_ASSET_INFO.asset_id);
       return {
-        value: this.intToMoneyPipe.transform((_c = zanoBalance === null || zanoBalance === void 0 ? void 0 : zanoBalance.total) !== null && _c !== void 0 ? _c : 0, zanoBalance === null || zanoBalance === void 0 ? void 0 : zanoBalance.asset_info.decimal_point),
+        value: this.intToMoneyPipe.transform((_f = zanoBalance === null || zanoBalance === void 0 ? void 0 : zanoBalance.total) !== null && _f !== void 0 ? _f : 0, zanoBalance === null || zanoBalance === void 0 ? void 0 : zanoBalance.asset_info.decimal_point),
         currency: zanoTicker
       };
     }
@@ -25060,7 +25085,7 @@ class WalletCardBalanceComponent {
     let hasPositiveBalance = false;
     let anyPriceFound = false;
     balances.forEach(balance => {
-      var _a, _b;
+      var _a, _b, _c, _d, _e;
 
       const amount = (0,_parts_functions_int_to_money__WEBPACK_IMPORTED_MODULE_5__.intToMoney)(balance.total, balance.asset_info.decimal_point);
       const bnAmount = new bignumber_js__WEBPACK_IMPORTED_MODULE_2__.BigNumber(amount);
@@ -25070,7 +25095,7 @@ class WalletCardBalanceComponent {
         const priceData = (_a = prices[balance.asset_info.asset_id]) === null || _a === void 0 ? void 0 : _a.data;
 
         if (priceData && typeof priceData !== 'string') {
-          const fiatPrice = (_b = priceData.fiat_prices) === null || _b === void 0 ? void 0 : _b[currency];
+          const fiatPrice = (_e = (_c = (_b = priceData.fiat_prices) === null || _b === void 0 ? void 0 : _b[currency]) !== null && _c !== void 0 ? _c : (_d = priceData.fiat_prices) === null || _d === void 0 ? void 0 : _d[currency.toLowerCase()]) !== null && _e !== void 0 ? _e : currency.toLowerCase() === 'usd' ? priceData.usd : undefined;
 
           if (fiatPrice) {
             anyPriceFound = true;
@@ -29808,9 +29833,16 @@ class VariablesService {
 
     const idToTicker = this._assetIdToTickerMap();
 
-    const missingAfterTrade = [];
+    const missingAfterTrade = []; // Explorer /api/pdc_market proxies Trade marks with CORS * (Qt WebEngine can call it).
+    // Direct Trade /api/prices/usd is allow-list-only and fails from the desktop wallet.
 
-    this._apiPdcService.getTradeUsdPrices().pipe((0,rxjs_operators__WEBPACK_IMPORTED_MODULE_6__.map)(book => {
+    this._apiPdcService.getPdcMarketUsdPrices().pipe((0,rxjs__WEBPACK_IMPORTED_MODULE_13__.mergeMap)(market => {
+      if (market.prices && Object.keys(market.prices).length > 0) {
+        return (0,rxjs__WEBPACK_IMPORTED_MODULE_14__.of)(market);
+      }
+
+      return this._apiPdcService.getTradeUsdPrices();
+    }), (0,rxjs_operators__WEBPACK_IMPORTED_MODULE_6__.map)(book => {
       var _a;
 
       const acc = {};
@@ -29860,7 +29892,7 @@ class VariablesService {
           } = item;
           if (!success || !data || typeof data !== 'object') continue;
           const usd = (_a = data.usd) !== null && _a !== void 0 ? _a : (_b = data.fiat_prices) === null || _b === void 0 ? void 0 : _b.usd;
-          if (usd === undefined) continue; // Normalize explorer payloads so sidebar fiat math always sees fiat_prices.usd
+          if (usd === undefined || !(Number(usd) > 0)) continue; // Normalize explorer payloads so sidebar fiat math always sees fiat_prices.usd
 
           acc[asset_id] = {
             success: true,
@@ -30939,7 +30971,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const buildTime = '2026-10-20T22:25:22.465Z';
+const buildTime = '2026-10-20T22:39:25.552Z';
 if (_environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.production) {
     (0,_angular_core__WEBPACK_IMPORTED_MODULE_4__.enableProdMode)();
 }
