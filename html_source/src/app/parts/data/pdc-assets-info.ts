@@ -26,3 +26,23 @@ export const ARQX_ASSET_ID = 'd59ca1b363d5f44e0f087d9549b734815fbc2a6ab49ef0a877
 
 /** Official Arqma wireframe mark (from arqma/arqma-logo). */
 export const ARQX_ASSET_LOGO = 'assets/currency-icons/arqma.png';
+
+/**
+ * GUI-only logo for known assets. Known ids/tickers always win over whatever
+ * logo the wallet/whitelist already filled in (often custom_token.svg).
+ */
+export function guiLogoForAsset(asset_info: Pick<AssetInfo, 'asset_id' | 'ticker' | 'logo'>): string | undefined {
+    const id = (asset_info.asset_id ?? '').toLowerCase();
+    const ticker = (asset_info.ticker ?? '').toUpperCase();
+
+    if (id === PDC_ASSET_INFO.asset_id.toLowerCase() || ticker === 'PDC') {
+        return PDC_ASSET_INFO.logo;
+    }
+    if (id === BTCX_ASSET_ID || ticker === 'BTCX') {
+        return BTCX_ASSET_LOGO;
+    }
+    if (id === ARQX_ASSET_ID || ticker === 'ARQX' || ticker === 'ARQMX') {
+        return ARQX_ASSET_LOGO;
+    }
+    return undefined;
+}

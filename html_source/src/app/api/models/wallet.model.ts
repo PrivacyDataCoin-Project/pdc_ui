@@ -12,13 +12,7 @@ import {
 } from './assets.model';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { AliasInfo, AliasInfoList } from '@api/models/alias.model';
-import {
-    ARQX_ASSET_ID,
-    ARQX_ASSET_LOGO,
-    BTCX_ASSET_ID,
-    BTCX_ASSET_LOGO,
-    PDC_ASSET_INFO,
-} from '@parts/data/pdc-assets-info';
+import { guiLogoForAsset, PDC_ASSET_INFO } from '@parts/data/pdc-assets-info';
 import { map } from 'rxjs/operators';
 import { DEFAULT_ASSET_LOGO_SRC } from '@parts/data/constants';
 import { CurrentPriceForAssets } from '@api/models/api-pdc.models';
@@ -107,15 +101,7 @@ const prepareBalances = (
 
     const ensureLogoAndPriceUrl = (asset_info: AssetInfo): AssetInfo => ({
         ...asset_info,
-        logo:
-            asset_info.logo ||
-            (asset_info.asset_id === PDC_ASSET_INFO.asset_id
-                ? PDC_ASSET_INFO.logo
-                : asset_info.asset_id === BTCX_ASSET_ID
-                  ? BTCX_ASSET_LOGO
-                  : asset_info.asset_id === ARQX_ASSET_ID
-                    ? ARQX_ASSET_LOGO
-                    : DEFAULT_ASSET_LOGO_SRC),
+        logo: guiLogoForAsset(asset_info) ?? asset_info.logo ?? DEFAULT_ASSET_LOGO_SRC,
         price_url: asset_info.price_url || (asset_info.asset_id === PDC_ASSET_INFO.asset_id ? PDC_ASSET_INFO.price_url : ''),
     });
 
@@ -165,10 +151,12 @@ const prepareBalances = (
 
         byId.set(id, {
             ...existing,
-            asset_info: {
-                ...ensureLogoAndPriceUrl(asset_info),
+            // Re-run logo resolve on the merged metadata so known assets
+            // (ARQX/BTCX/PDC) are not stuck on custom_token.svg from a prior row.
+            asset_info: ensureLogoAndPriceUrl({
                 ...existing.asset_info,
-            },
+                ...asset_info,
+            }),
         });
     }
 

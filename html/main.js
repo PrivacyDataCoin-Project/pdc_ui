@@ -77,18 +77,14 @@ const sortBalances = (value, verifiedAssetInfoWhitelist, currentPriceForAssets, 
 };
 const prepareBalances = (value) => {
     const [assetBalances, assetInfoWhitelist, verifiedAssetInfoWhitelist, localBlacklistVerifiedAssets, currentPriceForAssets, walletSettings,] = value;
-    const ensureLogoAndPriceUrl = (asset_info) => ({
-        ...asset_info,
-        logo: asset_info.logo ||
-            (asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.PDC_ASSET_INFO.asset_id
-                ? _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.PDC_ASSET_INFO.logo
-                : asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.BTCX_ASSET_ID
-                    ? _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.BTCX_ASSET_LOGO
-                    : asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.ARQX_ASSET_ID
-                        ? _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.ARQX_ASSET_LOGO
-                        : _parts_data_constants__WEBPACK_IMPORTED_MODULE_3__.DEFAULT_ASSET_LOGO_SRC),
-        price_url: asset_info.price_url || (asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.PDC_ASSET_INFO.asset_id ? _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.PDC_ASSET_INFO.price_url : ''),
-    });
+    const ensureLogoAndPriceUrl = (asset_info) => {
+        var _a, _b;
+        return ({
+            ...asset_info,
+            logo: (_b = (_a = (0,_parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.guiLogoForAsset)(asset_info)) !== null && _a !== void 0 ? _a : asset_info.logo) !== null && _b !== void 0 ? _b : _parts_data_constants__WEBPACK_IMPORTED_MODULE_3__.DEFAULT_ASSET_LOGO_SRC,
+            price_url: asset_info.price_url || (asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.PDC_ASSET_INFO.asset_id ? _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.PDC_ASSET_INFO.price_url : ''),
+        });
+    };
     // Build map for O(1) updates by asset_id
     const byId = new Map((assetBalances !== null && assetBalances !== void 0 ? assetBalances : []).map((b) => [
         b.asset_info.asset_id,
@@ -130,10 +126,12 @@ const prepareBalances = (value) => {
             continue;
         byId.set(id, {
             ...existing,
-            asset_info: {
-                ...ensureLogoAndPriceUrl(asset_info),
+            // Re-run logo resolve on the merged metadata so known assets
+            // (ARQX/BTCX/PDC) are not stuck on custom_token.svg from a prior row.
+            asset_info: ensureLogoAndPriceUrl({
                 ...existing.asset_info,
-            },
+                ...asset_info,
+            }),
         });
     }
     const blacklist = new Set(localBlacklistVerifiedAssets !== null && localBlacklistVerifiedAssets !== void 0 ? localBlacklistVerifiedAssets : []);
@@ -25686,7 +25684,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "ARQX_ASSET_LOGO": () => (/* binding */ ARQX_ASSET_LOGO),
 /* harmony export */   "BTCX_ASSET_ID": () => (/* binding */ BTCX_ASSET_ID),
 /* harmony export */   "BTCX_ASSET_LOGO": () => (/* binding */ BTCX_ASSET_LOGO),
-/* harmony export */   "PDC_ASSET_INFO": () => (/* binding */ PDC_ASSET_INFO)
+/* harmony export */   "PDC_ASSET_INFO": () => (/* binding */ PDC_ASSET_INFO),
+/* harmony export */   "guiLogoForAsset": () => (/* binding */ guiLogoForAsset)
 /* harmony export */ });
 const PDC_ASSET_INFO = {
     asset_id: 'd6329b5b1f7c0805b5c345f4957554002a2f557845f64d7645dae0e051a6498a',
@@ -25708,6 +25707,25 @@ const BTCX_ASSET_LOGO = 'assets/currency-icons/wbtc.svg';
 const ARQX_ASSET_ID = 'd59ca1b363d5f44e0f087d9549b734815fbc2a6ab49ef0a877ccd910b1a1b9c3';
 /** Official Arqma wireframe mark (from arqma/arqma-logo). */
 const ARQX_ASSET_LOGO = 'assets/currency-icons/arqma.png';
+/**
+ * GUI-only logo for known assets. Known ids/tickers always win over whatever
+ * logo the wallet/whitelist already filled in (often custom_token.svg).
+ */
+function guiLogoForAsset(asset_info) {
+    var _a, _b;
+    const id = ((_a = asset_info.asset_id) !== null && _a !== void 0 ? _a : '').toLowerCase();
+    const ticker = ((_b = asset_info.ticker) !== null && _b !== void 0 ? _b : '').toUpperCase();
+    if (id === PDC_ASSET_INFO.asset_id.toLowerCase() || ticker === 'PDC') {
+        return PDC_ASSET_INFO.logo;
+    }
+    if (id === BTCX_ASSET_ID || ticker === 'BTCX') {
+        return BTCX_ASSET_LOGO;
+    }
+    if (id === ARQX_ASSET_ID || ticker === 'ARQX' || ticker === 'ARQMX') {
+        return ARQX_ASSET_LOGO;
+    }
+    return undefined;
+}
 
 
 /***/ }),
@@ -26801,14 +26819,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "getLogoTemplateByAssetInfo": () => (/* binding */ getLogoTemplateByAssetInfo)
 /* harmony export */ });
 /* harmony import */ var _parts_data_constants__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @parts/data/constants */ 23480);
+/* harmony import */ var _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @parts/data/pdc-assets-info */ 77411);
 
-const getLogoTemplateByAssetInfo = ({ logo, ticker }) => {
+
+const getLogoTemplateByAssetInfo = (asset_info) => {
+    var _a;
+    const { ticker } = asset_info;
+    const logo = (_a = (0,_parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_1__.guiLogoForAsset)(asset_info)) !== null && _a !== void 0 ? _a : asset_info.logo;
     if (logo === null || logo === void 0 ? void 0 : logo.includes('<svg')) {
         return logo;
     }
-    else {
-        return `<img alt="${ticker}" src="${logo !== null && logo !== void 0 ? logo : _parts_data_constants__WEBPACK_IMPORTED_MODULE_0__.DEFAULT_ASSET_LOGO_SRC}"/>`;
-    }
+    return `<img alt="${ticker}" src="${logo !== null && logo !== void 0 ? logo : _parts_data_constants__WEBPACK_IMPORTED_MODULE_0__.DEFAULT_ASSET_LOGO_SRC}"/>`;
 };
 
 
@@ -30842,7 +30863,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const buildTime = '2026-10-20T20:24:39.358Z';
+const buildTime = '2026-10-20T21:36:34.479Z';
 if (_environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.production) {
     (0,_angular_core__WEBPACK_IMPORTED_MODULE_4__.enableProdMode)();
 }
