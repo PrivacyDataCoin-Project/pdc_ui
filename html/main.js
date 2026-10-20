@@ -84,7 +84,9 @@ const prepareBalances = (value) => {
                 ? _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.PDC_ASSET_INFO.logo
                 : asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.BTCX_ASSET_ID
                     ? _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.BTCX_ASSET_LOGO
-                    : _parts_data_constants__WEBPACK_IMPORTED_MODULE_3__.DEFAULT_ASSET_LOGO_SRC),
+                    : asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.ARQX_ASSET_ID
+                        ? _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.ARQX_ASSET_LOGO
+                        : _parts_data_constants__WEBPACK_IMPORTED_MODULE_3__.DEFAULT_ASSET_LOGO_SRC),
         price_url: asset_info.price_url || (asset_info.asset_id === _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.PDC_ASSET_INFO.asset_id ? _parts_data_pdc_assets_info__WEBPACK_IMPORTED_MODULE_2__.PDC_ASSET_INFO.price_url : ''),
     });
     // Build map for O(1) updates by asset_id
@@ -25680,6 +25682,8 @@ const isFiatCurrency = (currency) => fiatCurrencyIds.has(currency);
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "ARQX_ASSET_ID": () => (/* binding */ ARQX_ASSET_ID),
+/* harmony export */   "ARQX_ASSET_LOGO": () => (/* binding */ ARQX_ASSET_LOGO),
 /* harmony export */   "BTCX_ASSET_ID": () => (/* binding */ BTCX_ASSET_ID),
 /* harmony export */   "BTCX_ASSET_LOGO": () => (/* binding */ BTCX_ASSET_LOGO),
 /* harmony export */   "PDC_ASSET_INFO": () => (/* binding */ PDC_ASSET_INFO)
@@ -25700,6 +25704,10 @@ const PDC_ASSET_INFO = {
 const BTCX_ASSET_ID = 'c2bf0410873b49ec7e7dd19d62bca9625d80cd3123670a67b48d997d3127426d';
 /** Orange Bitcoin mark (same artwork as wbtc.svg). */
 const BTCX_ASSET_LOGO = 'assets/currency-icons/wbtc.svg';
+/** Wrapped Arqma (ARQX) — logo is GUI-only; whitelist JSON has no logo field. */
+const ARQX_ASSET_ID = 'd59ca1b363d5f44e0f087d9549b734815fbc2a6ab49ef0a877ccd910b1a1b9c3';
+/** Official Arqma wireframe mark (from arqma/arqma-logo). */
+const ARQX_ASSET_LOGO = 'assets/currency-icons/arqma.png';
 
 
 /***/ }),
@@ -30834,7 +30842,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const buildTime = '2026-10-17T23:44:12.032Z';
+const buildTime = '2026-10-20T20:24:39.358Z';
 if (_environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.production) {
     (0,_angular_core__WEBPACK_IMPORTED_MODULE_4__.enableProdMode)();
 }

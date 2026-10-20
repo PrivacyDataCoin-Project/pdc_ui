@@ -20,3 +20,9 @@ export const BTCX_ASSET_ID = 'c2bf0410873b49ec7e7dd19d62bca9625d80cd3123670a67b4
 
 /** Orange Bitcoin mark (same artwork as wbtc.svg). */
 export const BTCX_ASSET_LOGO = 'assets/currency-icons/wbtc.svg';
+
+/** Wrapped Arqma (ARQX) — logo is GUI-only; whitelist JSON has no logo field. */
+export const ARQX_ASSET_ID = 'd59ca1b363d5f44e0f087d9549b734815fbc2a6ab49ef0a877ccd910b1a1b9c3';
+
+/** Official Arqma wireframe mark (from arqma/arqma-logo). */
+export const ARQX_ASSET_LOGO = 'assets/currency-icons/arqma.png';
