@@ -922,11 +922,12 @@
         "WRAP": {
             "ESTIMATE": "Stime della transazione",
             "FEE": "Commissione transazione Ethereum:",
-            "MAIN_TEXT": "Questa transazione creerà wPdc (\"Wrapped Pdc\") che verrà inviato all'indirizzo specificato sulla rete Ethereum.",
+            "MAIN_TEXT": "This transaction will create PDCX (Wrapped PDC) which will be sent to the specified address.",
             "TITLE": "Wrap",
             "WILL_RECEIVE": "Riceverai:",
             "PDC": "PDC",
-            "wPDC": "wPDC"
+            "wPDC": "PDCX",
+            "PDCX": "PDCX"
         }
     },
     "SEND_DETAILS_MODAL": {

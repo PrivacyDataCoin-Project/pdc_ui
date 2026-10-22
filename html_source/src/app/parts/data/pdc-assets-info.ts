@@ -28,6 +28,21 @@ export const ARQX_ASSET_ID = 'd59ca1b363d5f44e0f087d9549b734815fbc2a6ab49ef0a877
 export const ARQX_ASSET_LOGO = 'assets/currency-icons/arqma.png';
 
 /**
+ * Wrapped PDCX (and PDCx) — same logo as native PDC.
+ * Logo is GUI-only; whitelist JSON has no logo field.
+ * Fill `PDCX_ASSET_ID` after mainnet deploy + whitelist sign.
+ */
+export const PDCX_ASSET_ID = '5292b7984565b21d47e456c381973b700738b9819f9e96b841f68cfa116774bd';
+export const PDCX_ASSET_LOGO = PDC_ASSET_INFO.logo;
+
+/** Same Trade/explorer USD price feed as native PDC. */
+export const PDCX_PRICE_URL = PDC_ASSET_INFO.price_url;
+
+export function isPdcxTicker(ticker?: string): boolean {
+    return (ticker ?? '').toUpperCase() === 'PDCX';
+}
+
+/**
  * GUI-only logo for known assets. Known ids/tickers always win over whatever
  * logo the wallet/whitelist already filled in (often custom_token.svg).
  */
@@ -37,6 +52,9 @@ export function guiLogoForAsset(asset_info: Pick<AssetInfo, 'asset_id' | 'ticker
 
     if (id === PDC_ASSET_INFO.asset_id.toLowerCase() || ticker === 'PDC') {
         return PDC_ASSET_INFO.logo;
+    }
+    if (isPdcxTicker(ticker) || (PDCX_ASSET_ID && id === PDCX_ASSET_ID.toLowerCase())) {
+        return PDCX_ASSET_LOGO;
     }
     if (id === BTCX_ASSET_ID || ticker === 'BTCX') {
         return BTCX_ASSET_LOGO;

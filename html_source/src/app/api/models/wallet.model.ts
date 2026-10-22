@@ -12,7 +12,7 @@ import {
 } from './assets.model';
 import { BehaviorSubject, combineLatest, Subscription } from 'rxjs';
 import { AliasInfo, AliasInfoList } from '@api/models/alias.model';
-import { guiLogoForAsset, PDC_ASSET_INFO } from '@parts/data/pdc-assets-info';
+import { guiLogoForAsset, isPdcxTicker, PDC_ASSET_INFO, PDCX_PRICE_URL } from '@parts/data/pdc-assets-info';
 import { map } from 'rxjs/operators';
 import { DEFAULT_ASSET_LOGO_SRC } from '@parts/data/constants';
 import { CurrentPriceForAssets } from '@api/models/api-pdc.models';
@@ -99,11 +99,17 @@ const prepareBalances = (
         walletSettings,
     ] = value;
 
-    const ensureLogoAndPriceUrl = (asset_info: AssetInfo): AssetInfo => ({
-        ...asset_info,
-        logo: guiLogoForAsset(asset_info) ?? asset_info.logo ?? DEFAULT_ASSET_LOGO_SRC,
-        price_url: asset_info.price_url || (asset_info.asset_id === PDC_ASSET_INFO.asset_id ? PDC_ASSET_INFO.price_url : ''),
-    });
+    const ensureLogoAndPriceUrl = (asset_info: AssetInfo): AssetInfo => {
+        const usePdcPrice =
+            asset_info.asset_id === PDC_ASSET_INFO.asset_id || isPdcxTicker(asset_info.ticker);
+        return {
+            ...asset_info,
+            logo: guiLogoForAsset(asset_info) ?? asset_info.logo ?? DEFAULT_ASSET_LOGO_SRC,
+            price_url:
+                asset_info.price_url
+                || (usePdcPrice ? (isPdcxTicker(asset_info.ticker) ? PDCX_PRICE_URL : PDC_ASSET_INFO.price_url) : ''),
+        };
+    };
 
     // Build map for O(1) updates by asset_id
     const byId = new Map<string, AssetBalance>(
@@ -152,7 +158,7 @@ const prepareBalances = (
         byId.set(id, {
             ...existing,
             // Re-run logo resolve on the merged metadata so known assets
-            // (ARQX/BTCX/PDC) are not stuck on custom_token.svg from a prior row.
+            // (ARQX/BTCX/PDC/PDCX) are not stuck on custom_token.svg from a prior row.
             asset_info: ensureLogoAndPriceUrl({
                 ...existing.asset_info,
                 ...asset_info,

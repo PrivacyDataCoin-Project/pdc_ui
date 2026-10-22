@@ -127,7 +127,7 @@ const prepareBalances = (value) => {
         byId.set(id, {
             ...existing,
             // Re-run logo resolve on the merged metadata so known assets
-            // (ARQX/BTCX/PDC) are not stuck on custom_token.svg from a prior row.
+            // (ARQX/BTCX/PDC/PDCX) are not stuck on custom_token.svg from a prior row.
             asset_info: ensureLogoAndPriceUrl({
                 ...existing.asset_info,
                 ...asset_info,
@@ -25716,6 +25716,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "ARQX_ASSET_LOGO": () => (/* binding */ ARQX_ASSET_LOGO),
 /* harmony export */   "BTCX_ASSET_ID": () => (/* binding */ BTCX_ASSET_ID),
 /* harmony export */   "BTCX_ASSET_LOGO": () => (/* binding */ BTCX_ASSET_LOGO),
+/* harmony export */   "PDCX_ASSET_LOGO": () => (/* binding */ PDCX_ASSET_LOGO),
 /* harmony export */   "PDC_ASSET_INFO": () => (/* binding */ PDC_ASSET_INFO),
 /* harmony export */   "guiLogoForAsset": () => (/* binding */ guiLogoForAsset)
 /* harmony export */ });
@@ -25740,6 +25741,11 @@ const ARQX_ASSET_ID = 'd59ca1b363d5f44e0f087d9549b734815fbc2a6ab49ef0a877ccd910b
 /** Official Arqma wireframe mark (from arqma/arqma-logo). */
 const ARQX_ASSET_LOGO = 'assets/currency-icons/arqma.png';
 /**
+ * Wrapped / fee-token PDCX (and PDCx) — same padlock mark as native PDC.
+ * Logo is GUI-only; whitelist JSON has no logo field.
+ */
+const PDCX_ASSET_LOGO = 'assets/currency-icons/pdcx.png';
+/**
  * GUI-only logo for known assets. Known ids/tickers always win over whatever
  * logo the wallet/whitelist already filled in (often custom_token.svg).
  */
@@ -25749,6 +25755,9 @@ function guiLogoForAsset(asset_info) {
     const ticker = ((_b = asset_info.ticker) !== null && _b !== void 0 ? _b : '').toUpperCase();
     if (id === PDC_ASSET_INFO.asset_id.toLowerCase() || ticker === 'PDC') {
         return PDC_ASSET_INFO.logo;
+    }
+    if (ticker === 'PDCX') {
+        return PDCX_ASSET_LOGO;
     }
     if (id === BTCX_ASSET_ID || ticker === 'BTCX') {
         return BTCX_ASSET_LOGO;
@@ -30971,7 +30980,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const buildTime = '2026-10-20T22:39:25.552Z';
+const buildTime = '2026-10-21T22:15:57.726Z';
 if (_environments_environment__WEBPACK_IMPORTED_MODULE_1__.environment.production) {
     (0,_angular_core__WEBPACK_IMPORTED_MODULE_4__.enableProdMode)();
 }
