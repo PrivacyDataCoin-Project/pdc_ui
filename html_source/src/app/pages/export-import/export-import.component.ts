@@ -70,6 +70,9 @@ export class ExportImportComponent {
                                         }
                                     });
                                 }
+                                if (this.variablesService.appPass) {
+                                    this.backend.storeSecureAppData();
+                                }
                                 this.ngZone.run(() => {
                                     this.router.navigate(['/contacts']);
                                 });
@@ -90,8 +93,9 @@ export class ExportImportComponent {
     export(): void {
         const contacts: Array<Contact> = [];
         this.variablesService.contacts.forEach((contact) => {
-            delete contact.alias;
-            contacts.push(contact);
+            const exported = { ...contact };
+            delete exported.alias;
+            contacts.push(exported);
         });
 
         this.backend.saveFileDialog('', '*', this.variablesService.settings.default_path, (file_status, file_data) => {

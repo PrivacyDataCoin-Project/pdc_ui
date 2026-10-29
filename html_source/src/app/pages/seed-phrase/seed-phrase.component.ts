@@ -126,18 +126,21 @@ export class SeedPhraseComponent implements OnInit, OnDestroy {
             return;
         }
 
-        this.showSeed = true;
-
         const wallet_id = this.wallet_id;
         const seed_password = this.hasPassphrase ? this.seedPhraseForm.controls.password.value : '';
 
         this._backendService.getSmartWalletInfo({ wallet_id, seed_password }, (_, data) => {
-            if (hasOwnProperty(data, 'seed_phrase')) {
-                this._ngZone.run(() => {
-                    const seed = data['seed_phrase'].trim();
-                    this.seedPhraseWords = seed ? seed.split(' ') : [];
-                });
+            if (!hasOwnProperty(data, 'seed_phrase')) {
+                return;
             }
+            const seed = String(data['seed_phrase'] ?? '').trim();
+            if (!seed) {
+                return;
+            }
+            this._ngZone.run(() => {
+                this.seedPhraseWords = seed.split(/\s+/);
+                this.showSeed = true;
+            });
         });
     }
 }

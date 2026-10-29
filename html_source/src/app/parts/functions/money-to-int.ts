@@ -15,7 +15,9 @@ export const moneyToInt = (value: string, decimal_point?: any): BigNumber => {
             }
 
             if (CURRENCY_DISPLAY_DECIMAL_POINT < fraction_size) {
-                am_str = am_str.slice(0, point_index) + am_str.slice(point_index + 1, CURRENCY_DISPLAY_DECIMAL_POINT);
+                // slice end is an index, not a length. Keep the first decimal_point fractional digits.
+                const fractionLimit = Number(CURRENCY_DISPLAY_DECIMAL_POINT);
+                am_str = am_str.slice(0, point_index) + am_str.slice(point_index + 1, point_index + 1 + fractionLimit);
             } else {
                 am_str = am_str.slice(0, point_index) + am_str.slice(point_index + 1, am_str.length);
             }

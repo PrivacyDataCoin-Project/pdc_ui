@@ -247,6 +247,43 @@ export class BackendService {
         }
     }
 
+    /** Copy used only for console diagnostics. Does not change the value sent to the daemon. */
+    private static redactSecrets(value: unknown, depth = 0): unknown {
+        if (value === null || value === undefined || depth > 8) {
+            return value;
+        }
+        if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+            return value;
+        }
+        if (value instanceof BigNumber) {
+            return value.toString();
+        }
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (trimmed.length < 200000 && (trimmed.startsWith('{') || trimmed.startsWith('['))) {
+                try {
+                    return BackendService.redactSecrets(JSON.parse(trimmed), depth + 1);
+                } catch {
+                    return value;
+                }
+            }
+            return value;
+        }
+        if (Array.isArray(value)) {
+            return value.map((item) => BackendService.redactSecrets(item, depth + 1));
+        }
+        if (typeof value !== 'object') {
+            return value;
+        }
+
+        const secretKeys = new Set(['pass', 'password', 'seed_phrase', 'seed_password', 'seed_pass', 'secret']);
+        const clone: Record<string, unknown> = {};
+        for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+            clone[key] = secretKeys.has(key) ? '[redacted]' : BackendService.redactSecrets(item, depth + 1);
+        }
+        return clone;
+    }
+
     eventSubscribe(command: Commands, callback): void {
         if (command === Commands.on_core_event) {
             this.backendObject[command].connect(callback);
@@ -706,9 +743,7 @@ export class BackendService {
         return this.runLogFilesCommand<LogFilesResponse>(Commands.clear_log_files);
     }
 
-    private runLogFilesCommand<T extends LogFilesResponse>(
-        command: Commands.get_log_files_size | Commands.clear_log_files
-    ): Observable<T> {
+    private runLogFilesCommand<T extends LogFilesResponse>(command: Commands.get_log_files_size | Commands.clear_log_files): Observable<T> {
         return new Observable<T>((observer) => {
             if (!this.backendObject?.[Commands.async_call] || !this.backendObject?.[command]) {
                 observer.error(new Error('Log files API is unavailable'));
@@ -778,7 +813,7 @@ export class BackendService {
                 response: JSON.parse(json_resp),
             };
             console.group(`----------- ${Commands.dispatch_async_call_result} -----------`);
-            console.log(asyncCommandResults);
+            console.log(BackendService.redactSecrets(asyncCommandResults));
             console.groupEnd();
             this.ngZone.run(() => setTimeout(() => this.dispatchAsyncCallResult$.next(asyncCommandResults), 250));
         });
@@ -1063,14 +1098,14 @@ export class BackendService {
     private commandDebug(command: Commands, params: Params, result: any): void {
         BackendService.Debug(2, '----------------- ' + command + ' -----------------');
         const debug = {
-            _send_params: params,
-            _result: result,
+            _send_params: BackendService.redactSecrets(params),
+            _result: BackendService.redactSecrets(result),
         };
         BackendService.Debug(2, debug);
         try {
-            BackendService.Debug(2, JSONBigNumber.parse(result, BackendService.bigNumberParser));
+            BackendService.Debug(2, BackendService.redactSecrets(JSONBigNumber.parse(result, BackendService.bigNumberParser)));
         } catch (e) {
-            BackendService.Debug(2, { response_data: result, error_code: 'OK' });
+            BackendService.Debug(2, { response_data: BackendService.redactSecrets(result), error_code: 'OK' });
         }
     }
 
@@ -1130,6 +1165,9 @@ export class BackendService {
         }
 
         if (!core_busy) {
+            if (command === Commands.get_recent_transfers) {
+                this.variablesService.get_recent_transfers = false;
+            }
             if (typeof callback === 'function') {
                 callback(Status, data, res_error_code);
             } else {
@@ -1151,6 +1189,9 @@ export class BackendService {
 
         if (!Action) {
             BackendService.Debug(0, 'Run Command Error! Command "' + command + '" don\'t found in backendObject');
+            if (command === Commands.get_recent_transfers) {
+                this.variablesService.get_recent_transfers = false;
+            }
             return;
         }
 
@@ -1165,9 +1206,6 @@ export class BackendService {
             return;
         }
 
-        if (command === Commands.get_recent_transfers) {
-            this.variablesService.get_recent_transfers = false;
-        }
         Action(params, (resultStr) => {
             this.commandDebug(command, params, resultStr);
             return this.backendCallback(resultStr, params, callback, command);

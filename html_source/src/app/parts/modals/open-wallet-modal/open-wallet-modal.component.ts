@@ -132,7 +132,7 @@ export class OpenWalletModalComponent implements OnInit, OnDestroy {
             open_data['wi'].balances,
             open_data['wi'].unlocked_balance,
             open_data['wi'].mined_total,
-            open_data['wi'].tracking_key
+            open_data['wi'].tracking_hey
         );
         newWallet.is_auditable = open_data['wi'].is_auditable;
         newWallet.is_watch_only = open_data['wi'].is_watch_only;
