@@ -231,7 +231,7 @@ export class LoginComponent implements OnInit, OnDestroy {
 
     getData(appPass): void {
         this.backend.getSecureAppData({ pass: appPass }, (status, data) => {
-            if (!data.error_code) {
+            if (data && !data.error_code) {
                 this.setAuthPassError(null);
                 this.variablesService.appLogin = true;
                 this.variablesService.dataIsLoaded = true;
@@ -248,8 +248,8 @@ export class LoginComponent implements OnInit, OnDestroy {
                     });
                     return;
                 }
-                if (hasOwnProperty(data, 'contracts')) {
-                    if (Object.keys(data['contacts']).length !== 0) {
+                if (hasOwnProperty(data, 'contacts') && Array.isArray(data['contacts'])) {
+                    if (data['contacts'].length !== 0) {
                         data['contacts'].map((contact) => {
                             this.variablesService.contacts.push(contact);
                         });
@@ -265,7 +265,7 @@ export class LoginComponent implements OnInit, OnDestroy {
                         });
                     }
                 }
-                if (!hasOwnProperty(data, 'wallets') && !hasOwnProperty(data, 'contracts')) {
+                if (!hasOwnProperty(data, 'wallets') && !hasOwnProperty(data, 'contacts')) {
                     if (data.length !== 0 && !isEmptyObject) {
                         this.getWalletData(data);
                     } else {
@@ -281,18 +281,42 @@ export class LoginComponent implements OnInit, OnDestroy {
                 }
             }
 
-            if (data.error_code === 'WRONG_PASSWORD') {
+            if (!data || data.error_code === 'WRONG_PASSWORD') {
                 this.ngZone.run(() => {
                     this.submitLoading = false;
                     this.setAuthPassError({ wrong_password: true });
+                });
+                return;
+            }
+
+            if (data.error_code) {
+                this.ngZone.run(() => {
+                    this.submitLoading = false;
                 });
             }
         });
     }
 
     getWalletData(walletData): void {
+        if (!Array.isArray(walletData) || walletData.length === 0) {
+            this.ngZone.run(() => {
+                this.submitLoading = false;
+                this.router.navigate(['/']);
+            });
+            return;
+        }
+
         let openWallets = 0;
         let runWallets = 0;
+        let settled = 0;
+        const settle = (): void => {
+            settled++;
+            if (settled === walletData.length) {
+                this.ngZone.run(() => {
+                    this.submitLoading = false;
+                });
+            }
+        };
         walletData.forEach((wallet, wallet_index) => {
             this.backend.openWallet(wallet.path, wallet.pass, this.variablesService.count, true, (open_status, open_data, open_error) => {
                 if (open_status || open_error === 'FILE_RESTORED') {
@@ -354,9 +378,9 @@ export class LoginComponent implements OnInit, OnDestroy {
                         });
                     }
                 }
+                settle();
             });
         });
-        this.submitLoading = false;
     }
 
     private setAuthPassError(errors: ValidationErrors | null): void {

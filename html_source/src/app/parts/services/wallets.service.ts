@@ -214,14 +214,38 @@ export class WalletsService {
                 if (this.wallets.length > 0) {
                     this.currentWallet = this.wallets[0];
                     url = '/wallet/';
+                } else {
+                    this._variablesService.setCurrentWallet(null);
                 }
                 if (this._variablesService.appPass) {
                     this._backendService.storeSecureAppData();
                 }
+                this.persistOpenWalletList();
                 await this._router.navigate([url]);
             });
         };
 
         this._backendService.closeWallet(wallet_id, callback);
+    }
+
+    /**
+     * `storeAppData` rewrites `settings.wallets` only when at least one wallet is open.
+     * Closing the last wallet must still persist an empty list, otherwise the next
+     * launch offers wallets the user already closed.
+     */
+    private persistOpenWalletList(): void {
+        const wallets = this.wallets;
+        this._variablesService.settings.wallets = wallets.map((wallet) => ({
+            name: wallet.name,
+            path: wallet.path,
+            settings: wallet.settings,
+        }));
+        this._variablesService.settings.localBlacklistsOfVerifiedAssetsByWallets = wallets.reduce(
+            (acc, { address, localBlacklistVerifiedAssets$: { value: localBlacklistVerifiedAssets } }) => {
+                return { ...acc, [address]: localBlacklistVerifiedAssets };
+            },
+            {}
+        );
+        this._backendService.storeAppData();
     }
 }

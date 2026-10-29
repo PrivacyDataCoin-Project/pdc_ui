@@ -260,6 +260,7 @@ export class CreateSwapComponent implements OnInit, OnDestroy {
             this.form.controls.sending.controls.asset_id.setErrors({
                 alias_not_found: true,
             });
+            this.loading$.next(false);
             return;
         }
 
@@ -267,6 +268,7 @@ export class CreateSwapComponent implements OnInit, OnDestroy {
             this.form.controls.receiving.controls.asset_id.setErrors({
                 alias_not_found: true,
             });
+            this.loading$.next(false);
             return;
         }
 
@@ -470,11 +472,11 @@ export class CreateSwapComponent implements OnInit, OnDestroy {
                             [
                                 Validators.required,
                                 (control: FormControl): ValidationErrors | null => {
-                                    if (!control.value) {
+                                    if (control.value === null || control.value === undefined || control.value === '') {
                                         return null;
                                     }
 
-                                    if (control.value === 0) {
+                                    if (new BigNumber(control.value).eq(0)) {
                                         return { zero: true };
                                     }
                                     return null;
@@ -575,11 +577,17 @@ export class CreateSwapComponent implements OnInit, OnDestroy {
             {
                 validators: [
                     (control: AbstractControl): ValidationErrors | null => {
-                        const condition = control.get('sending').get('asset_id').value === control.get('receiving').get('asset_id').value;
+                        const receivingAssetId = control.get('receiving').get('asset_id');
+                        const condition = control.get('sending').get('asset_id').value === receivingAssetId.value;
                         if (condition) {
-                            control.get('receiving').get('asset_id').setErrors({ sameAssetsId: true });
-                        } else {
-                            control.get('receiving').get('asset_id').setErrors(null);
+                            const errors = receivingAssetId.errors ?? {};
+                            if (!errors.sameAssetsId) {
+                                receivingAssetId.setErrors({ ...errors, sameAssetsId: true });
+                            }
+                        } else if (receivingAssetId.errors?.sameAssetsId) {
+                            const rest = { ...receivingAssetId.errors };
+                            delete rest.sameAssetsId;
+                            receivingAssetId.setErrors(Object.keys(rest).length ? rest : null);
                         }
                         return null;
                     },

@@ -91,12 +91,17 @@ export class WalletDetailsComponent {
         const { wallet_id } = this.variablesService.current_wallet;
         const { password: seed_password } = this.passwordSeedPhraseForm.getRawValue();
         this.backend.getSmartWalletInfo({ wallet_id, seed_password }, (status, data) => {
-            if (hasOwnProperty(data, 'seed_phrase')) {
-                this.ngZone.run(() => {
-                    this.showSeed = true;
-                    this.seedPhrase = data['seed_phrase'].trim();
-                });
+            if (!hasOwnProperty(data, 'seed_phrase')) {
+                return;
             }
+            const seed = String(data['seed_phrase'] ?? '').trim();
+            if (!seed) {
+                return;
+            }
+            this.ngZone.run(() => {
+                this.showSeed = true;
+                this.seedPhrase = seed;
+            });
         });
     }
 

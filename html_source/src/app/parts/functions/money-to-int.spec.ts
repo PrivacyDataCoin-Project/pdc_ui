@@ -106,6 +106,14 @@ describe('money-to-int', () => {
         expect(moneyToInt('1', 1).toString()).toBe('10');
     });
 
+    it('truncates extra fractional digits without dropping the leading ones', () => {
+        expect(moneyToInt('1.23456', 3).toString()).toBe('1234');
+        expect(moneyToInt('1.1234567890123', 12).toString()).toBe('1123456789012');
+        expect(moneyToInt('12345.6789', 2).toString()).toBe('1234567');
+        expect(moneyToInt('0.129', 2).toString()).toBe('12');
+        expect(moneyToInt('1.2300', 2).toString()).toBe('123');
+    });
+
     it('Decimal point 0', () => {
         expect(moneyToInt('18446744073709551615', 0).toString()).toBe('18446744073709551615');
         expect(moneyToInt('18446744073709551615.0', 0).toString()).toBe('18446744073709551615');
